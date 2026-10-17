@@ -1,0 +1,82 @@
+# Configuración de SearXNG para Web Search MCP
+use_default_settings: true
+
+general:
+  debug: false
+  instance_name: "WebSearchMCP SearXNG"
+  donation_url: false
+  contact_url: false
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  default_lang: ""
+  ban_time_on_fail: 5
+  max_ban_time_on_fail: 120
+  formats:
+    - html
+    - json
+
+server:
+  port: 8080
+  bind_address: "0.0.0.0"
+  secret_key: "web-search-mcp-internal-secret-token"
+  limiter: false
+  image_proxy: false
+  method: "GET"
+  default_http_headers:
+    X-Content-Type-Options: nosniff
+    X-XSS-Protection: "1; mode=block"
+    X-Download-Options: noopen
+    X-Robots-Tag: noindex, nofollow
+    Referrer-Policy: no-referrer
+
+ui:
+  static_use_hash: true
+  default_locale: "en"
+  query_in_title: true
+  infinite_scroll: false
+
+engines:
+  - name: google
+    engine: google
+    shortcut: go
+    use_mobile_ui: false
+    timeout: 4.0
+    disabled: false
+
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: ddg
+    timeout: 3.5
+    disabled: false
+
+  - name: bing
+    engine: bing
+    shortcut: bi
+    timeout: 3.5
+    disabled: false
+
+  - name: brave
+    engine: brave
+    shortcut: br
+    timeout: 3.5
+    disabled: false
+
+  - name: wikipedia
+    engine: wikipedia
+    shortcut: wp
+    timeout: 3.0
+    disabled: false
+
+  - name: wikidata
+    engine: wikidata
+    shortcut: wd
+    timeout: 3.0
+    disabled: false
+
+  - name: github
+    engine: github
+    shortcut: gh
+    timeout: 4.0
+    disabled: false

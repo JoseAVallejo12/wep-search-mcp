@@ -1,0 +1,56 @@
+services:
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config/searxng/settings.yml:/etc/searxng/settings.yml:ro
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:8080/
+      - UWSGI_WORKERS=4
+      - UWSGI_THREADS=4
+    networks:
+      - mcp-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/healthz || wget -q --spider http://127.0.0.1:8080/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  mcp-search-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mcp-search-engine
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      - SEARXNG_URL=http://searxng:8080
+      - MCP_TRANSPORT=sse
+      - FETCH_TIMEOUT_MS=10000
+      - DEFAULT_MAX_RESULTS=5
+      - DEFAULT_MAX_TOKENS_PER_PAGE=1000
+      - MAX_ALLOWED_TOKENS_PER_PAGE=4000
+      - LOG_LEVEL=info
+    depends_on:
+      searxng:
+        condition: service_healthy
+    networks:
+      - mcp-net
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+networks:
+  mcp-net:
+    driver: bridge

@@ -1,0 +1,50 @@
+{
+  "name": "web-search-mcp",
+  "version": "1.0.0",
+  "description": "Optimized Web Search & Content Extraction MCP Server for LLMs (Self-hosted alternative to Tavily/Jina)",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "dev:stdio": "MCP_TRANSPORT=stdio tsx src/index.ts",
+    "clean": "rimraf dist"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "searxng",
+    "tavily-alternative",
+    "jina-alternative",
+    "llm-search",
+    "web-search",
+    "readability"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.6.1",
+    "@mozilla/readability": "^0.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "gpt-tokenizer": "^2.9.0",
+    "linkedom": "^0.18.9",
+    "turndown": "^7.2.0",
+    "turndown-plugin-gfm": "^1.0.2",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.9",
+    "@types/turndown": "^5.0.5",
+    "rimraf": "^6.0.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
