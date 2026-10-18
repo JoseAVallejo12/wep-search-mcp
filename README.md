@@ -127,6 +127,38 @@ Ambos servicios cuentan con `healthcheck` integrados:
 
 ---
 
+## 🚂 Despliegue en Railway (Cloud Hosting)
+
+El repositorio está 100% preparado para desplegarse en [Railway](https://railway.com) con red privada interna y configuración embebida de SearXNG.
+
+### Método 1: Drag & Drop de `docker-compose.yml` (El más rápido)
+1. Inicia sesión en tu cuenta de [Railway](https://railway.com) y crea un **Empty Project**.
+2. **Arrastra y suelta** el archivo `docker-compose.yml` de este repositorio directamente sobre el lienzo (canvas) del proyecto en Railway.
+3. Railway creará automáticamente los 2 servicios:
+   - `searxng` (construido desde `config/searxng/Dockerfile` con `settings.yml` incluido).
+   - `mcp-search-engine` (construido desde el `Dockerfile` raíz).
+4. En el servicio `mcp-search-engine`:
+   - Ve a **Settings -> Networking -> Public Networking** y haz clic en **Generate Domain** (para obtener tu URL pública, ej: `https://mcp-search-engine-production.up.railway.app`).
+   - Verifica en **Variables** que `SEARXNG_URL` apunte a `http://searxng.railway.internal:8080` (o déjalo por defecto, ya que cuenta con autodetección de red privada Railway).
+
+---
+
+### Método 2: Manual mediante GitHub Repo
+1. En Railway, crea un **Nuevo Proyecto** -> **Deploy from GitHub repo** y selecciona `JoseAVallejo12/wep-search-mcp`.
+2. **Primer Servicio (`mcp-search-engine`)**:
+   - Railway detectará el `Dockerfile` y `railway.json`.
+   - En **Settings -> Networking**, haz clic en **Generate Domain**.
+3. **Segundo Servicio (`searxng`)**:
+   - Haz clic en **+ New** -> **GitHub Repo** y selecciona de nuevo este mismo repositorio.
+   - En **Settings -> Build**, cambia el **Dockerfile Path** a:
+     ```
+     config/searxng/Dockerfile
+     ```
+   - Renombra el servicio a `searxng`.
+4. Ambos servicios se comunicarán automáticamente por la red privada segura de Railway sin exponer SearXNG a internet.
+
+---
+
 ## 🔌 Configuración de Clientes MCP
 
 ### Opción A: Conexión Remota vía SSE (Recomendada con Docker)

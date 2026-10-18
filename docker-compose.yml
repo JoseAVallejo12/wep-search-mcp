@@ -1,6 +1,9 @@
 services:
   searxng:
-    image: searxng/searxng:latest
+    build:
+      context: .
+      dockerfile: config/searxng/Dockerfile
+    image: custom-searxng:latest
     container_name: searxng
     restart: unless-stopped
     ports:

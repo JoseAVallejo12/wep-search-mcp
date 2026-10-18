@@ -41,49 +41,68 @@ export class SearXNGService {
       throw new Error('Search query cannot be empty.');
     }
 
-    const searchUrl = new URL(`${this.baseUrl}/search`);
+    try {
+      return await this.executeSearch(this.baseUrl, query, maxResults);
+    } catch (primaryError) {
+      // Self-healing fallback for Railway private networking if deployed without explicit SEARXNG_URL
+      if (this.baseUrl.includes('searxng:8080') || this.baseUrl.includes('localhost:8080')) {
+        const railwayUrl = 'http://searxng.railway.internal:8080';
+        try {
+          logger.info('Primary SearXNG endpoint failed, trying Railway private DNS fallback...', { fallbackUrl: railwayUrl });
+          const results = await this.executeSearch(railwayUrl, query, maxResults);
+          this.baseUrl = railwayUrl;
+          logger.info('Successfully switched to Railway internal URL', { url: this.baseUrl });
+          return results;
+        } catch {
+          // If fallback fails, throw primary error
+        }
+      }
+
+      logger.error('Failed to query SearXNG', {
+        error: primaryError instanceof Error ? primaryError.message : String(primaryError),
+        query,
+        baseUrl: this.baseUrl,
+      });
+      throw new Error(`SearXNG search error: ${primaryError instanceof Error ? primaryError.message : String(primaryError)}`);
+    }
+  }
+
+  private async executeSearch(baseUrl: string, query: string, maxResults: number): Promise<SearchResult[]> {
+    const searchUrl = new URL(`${baseUrl}/search`);
     searchUrl.searchParams.set('q', query.trim());
     searchUrl.searchParams.set('format', 'json');
     searchUrl.searchParams.set('categories', 'general');
 
     logger.debug('Executing SearXNG query', { query, searchUrl: searchUrl.toString() });
 
-    try {
-      const response = await fetch(searchUrl.toString(), {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-          'User-Agent': 'WebSearchMCP/1.0 (+https://github.com/mcp-search-engine)',
-        },
-        signal: AbortSignal.timeout(this.timeoutMs),
-      });
+    const response = await fetch(searchUrl.toString(), {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'WebSearchMCP/1.0 (+https://github.com/mcp-search-engine)',
+      },
+      signal: AbortSignal.timeout(this.timeoutMs),
+    });
 
-      if (!response.ok) {
-        throw new Error(`SearXNG responded with HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = (await response.json()) as SearXNGResponse;
-
-      if (!data.results || !Array.isArray(data.results)) {
-        logger.warn('SearXNG returned no results array', { data });
-        return [];
-      }
-
-      const filteredResults = this.filterAndDeduplicate(data.results, maxResults);
-      logger.info('SearXNG search completed', {
-        query,
-        rawCount: data.results.length,
-        returnedCount: filteredResults.length,
-      });
-
-      return filteredResults;
-    } catch (error) {
-      logger.error('Failed to query SearXNG', {
-        error: error instanceof Error ? error.message : String(error),
-        query,
-      });
-      throw new Error(`SearXNG search error: ${error instanceof Error ? error.message : String(error)}`);
+    if (!response.ok) {
+      throw new Error(`SearXNG responded with HTTP ${response.status}: ${response.statusText}`);
     }
+
+    const data = (await response.json()) as SearXNGResponse;
+
+    if (!data.results || !Array.isArray(data.results)) {
+      logger.warn('SearXNG returned no results array', { data });
+      return [];
+    }
+
+    const filteredResults = this.filterAndDeduplicate(data.results, maxResults);
+    logger.info('SearXNG search completed', {
+      query,
+      rawCount: data.results.length,
+      returnedCount: filteredResults.length,
+    });
+
+    return filteredResults;
   }
 
   /**
