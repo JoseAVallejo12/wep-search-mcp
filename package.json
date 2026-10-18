@@ -5,11 +5,13 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "npm run build:view && npm run build:server",
+    "build:view": "npm --prefix view run build",
+    "build:server": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "dev:stdio": "MCP_TRANSPORT=stdio tsx src/index.ts",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist view/dist"
   },
   "keywords": [
     "mcp",

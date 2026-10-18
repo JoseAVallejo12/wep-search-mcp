@@ -1,5 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { createMcpServer } from '../server.js';
@@ -20,6 +22,13 @@ export async function startSseTransport(): Promise<void> {
   app.use(cors());
   app.use(express.json({ limit: '4mb' }));
 
+  // Serve static assets from built React application (view/dist)
+  const viewDistPath = path.resolve(process.cwd(), 'view/dist');
+  if (fs.existsSync(viewDistPath)) {
+    app.use(express.static(viewDistPath, { index: false }));
+    logger.info(`Serving static React frontend from ${viewDistPath}`);
+  }
+
   const sessions = new Map<string, ActiveSession>();
 
   // Health check endpoint for Docker / orchestration
@@ -32,7 +41,7 @@ export async function startSseTransport(): Promise<void> {
     });
   });
 
-  // Root endpoint: Interactive landing page for browsers, JSON metadata for API clients
+  // Root endpoint: Serves React SPA for browsers, JSON metadata for API clients
   app.get('/', (req: Request, res: Response) => {
     // Return JSON if client explicitly asks for application/json or query parameter ?format=json
     const acceptsJson = req.headers.accept && req.headers.accept.includes('application/json') && !req.headers.accept.includes('text/html');
@@ -53,7 +62,14 @@ export async function startSseTransport(): Promise<void> {
       return;
     }
 
-    // Default: Serve high-conversion developer landing page
+    // Serve React index.html if available
+    const indexHtmlPath = path.join(viewDistPath, 'index.html');
+    if (fs.existsSync(indexHtmlPath)) {
+      res.sendFile(indexHtmlPath);
+      return;
+    }
+
+    // Fallback: SSR landing page if view/dist was not built
     const host = req.get('host') || 'mcp-search-engine-production.up.railway.app';
     const isHttps = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https';
     const protocol = isHttps ? 'https' : 'http';
