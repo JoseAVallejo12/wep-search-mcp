@@ -5,6 +5,7 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { createMcpServer } from '../server.js';
 import { env } from '../../config/env.js';
 import { logger } from '../../utils/logger.js';
+import { renderLandingPage } from '../../views/landing.page.js';
 
 interface ActiveSession {
   transport: SSEServerTransport;
@@ -31,21 +32,41 @@ export async function startSseTransport(): Promise<void> {
     });
   });
 
-  // Root endpoint info
-  app.get('/', (_req: Request, res: Response) => {
-    res.status(200).json({
-      name: 'web-search-mcp',
-      description: 'Optimized Web Search & Content Extraction MCP Server for LLMs',
-      version: '1.0.0',
-      transport: 'sse',
-      endpoints: {
-        sse: '/sse',
-        messages: '/messages',
-        health: '/health',
-      },
-      tools: ['web_search', 'web_fetch', 'search_and_extract'],
+  // Root endpoint: Interactive landing page for browsers, JSON metadata for API clients
+  app.get('/', (req: Request, res: Response) => {
+    // Return JSON if client explicitly asks for application/json or query parameter ?format=json
+    const acceptsJson = req.headers.accept && req.headers.accept.includes('application/json') && !req.headers.accept.includes('text/html');
+    if (req.query.format === 'json' || acceptsJson) {
+      res.status(200).json({
+        name: 'web-search-mcp',
+        description: 'Optimized Web Search & Content Extraction MCP Server for LLMs',
+        version: '1.0.0',
+        transport: 'sse',
+        endpoints: {
+          sse: '/sse',
+          messages: '/messages',
+          health: '/health',
+        },
+        tools: ['web_search', 'web_fetch', 'search_and_extract'],
+        activeSessions: sessions.size,
+      });
+      return;
+    }
+
+    // Default: Serve high-conversion developer landing page
+    const host = req.get('host') || 'mcp-search-engine-production.up.railway.app';
+    const isHttps = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https';
+    const protocol = isHttps ? 'https' : 'http';
+
+    const html = renderLandingPage({
       activeSessions: sessions.size,
+      uptime: process.uptime(),
+      host,
+      protocol,
     });
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.status(200).send(html);
   });
 
   // SSE connection endpoint
