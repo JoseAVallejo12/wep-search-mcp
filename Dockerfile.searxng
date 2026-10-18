@@ -1,3 +1,4 @@
+# SearXNG custom build for Railway
 FROM searxng/searxng:latest
 
 # Copy customized settings into image so it does not rely on host volume mounts
